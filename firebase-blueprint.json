@@ -1,0 +1,49 @@
+{
+  "collections": {
+    "users": {
+      "documents": {
+        "uid": {
+          "fields": {
+            "email": "string",
+            "plan": "string",
+            "trial_start_date": "timestamp",
+            "referral_code": "string",
+            "referred_by": "string?",
+            "total_earned": "number",
+            "created_at": "timestamp"
+          }
+        }
+      }
+    },
+    "jobs": {
+      "documents": {
+        "jobId": {
+          "fields": {
+            "title": "string",
+            "company": "string",
+            "type": "string",
+            "location": "string",
+            "salary": "string?",
+            "category": "string",
+            "is_free": "boolean",
+            "posted_at": "timestamp",
+            "apply_url": "string"
+          }
+        }
+      }
+    },
+    "courses": {
+      "documents": {
+        "courseId": {
+          "fields": {
+            "title": "string",
+            "description": "string",
+            "thumbnail": "string?",
+            "is_free": "boolean",
+            "content_url": "string"
+          }
+        }
+      }
+    }
+  }
+}
