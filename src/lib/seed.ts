@@ -1,5 +1,4 @@
-import { db } from './firebase';
-import { collection, addDoc, getDocs, query, limit, serverTimestamp } from 'firebase/firestore';
+import { supabase } from './supabase';
 
 const jobs = [
   {
@@ -11,7 +10,7 @@ const jobs = [
     category: 'Customer Support',
     is_free: false,
     apply_url: 'https://buffer.com/jobs',
-    posted_at: serverTimestamp()
+    posted_at: new Date().toISOString()
   },
   {
     title: 'React Developer (Lagos/Remote)',
@@ -22,7 +21,7 @@ const jobs = [
     category: 'Engineering',
     is_free: true,
     apply_url: 'https://paystack.com/careers',
-    posted_at: serverTimestamp()
+    posted_at: new Date().toISOString()
   },
   {
     title: 'Content Writer (Global Remote)',
@@ -33,7 +32,7 @@ const jobs = [
     category: 'Marketing',
     is_free: false,
     apply_url: 'https://ghost.org/careers',
-    posted_at: serverTimestamp()
+    posted_at: new Date().toISOString()
   }
 ];
 
@@ -54,20 +53,16 @@ const courses = [
   }
 ];
 
-export async function seedFirestore() {
-  const jobsSnap = await getDocs(query(collection(db, 'jobs'), limit(1)));
-  if (jobsSnap.empty) {
+export async function seedSupabase() {
+  const { data: jobsList } = await supabase.from('jobs').select('id').limit(1);
+  if (!jobsList || jobsList.length === 0) {
     console.log('Seeding jobs...');
-    for (const job of jobs) {
-      await addDoc(collection(db, 'jobs'), job);
-    }
+    await supabase.from('jobs').insert(jobs);
   }
 
-  const coursesSnap = await getDocs(query(collection(db, 'courses'), limit(1)));
-  if (coursesSnap.empty) {
+  const { data: coursesList } = await supabase.from('courses').select('id').limit(1);
+  if (!coursesList || coursesList.length === 0) {
     console.log('Seeding courses...');
-    for (const course of courses) {
-      await addDoc(collection(db, 'courses'), course);
-    }
+    await supabase.from('courses').insert(courses);
   }
 }

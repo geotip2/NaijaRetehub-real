@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Briefcase, Globe, Zap, ArrowRight, ShieldCheck, Star, User, Award } from 'lucide-react';
 import PricingTable from '../components/PricingTable';
 import AuthModal from '../components/AuthModal';
+import FAQ from '../components/FAQ';
 
 export default function Landing() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -41,7 +42,8 @@ export default function Landing() {
               className="text-xl text-gray-600 mb-10 leading-relaxed font-medium"
             >
               Access hand-picked international remote jobs paying ₦2M+ per month. 
-              No more filtering through scammy LinkedIn posts.
+              Master high-demand global skills and earn passive commissions by referring others. 
+              No more filtering through scammy LinkedIn posts—everything you need to win globally is here.
             </motion.p>
 
             <motion.div
@@ -70,22 +72,41 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How it Works */}
+      {/* The Ecosystem */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-16">3 Steps to Dollar Earnings</h2>
+          <div className="mb-16">
+            <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Your All-in-One Global Career Hub</h2>
+            <p className="text-gray-500 font-medium text-lg">We don't just list jobs; we build global careers.</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
-              { title: 'Create Account', desc: 'Sign up for free and tell us your skills.', icon: <User className="text-[#008751]" size={32} /> },
-              { title: 'Get Curated Jobs', desc: 'Receive daily remote jobs that actually hire Nigerians.', icon: <Briefcase className="text-[#008751]" size={32} /> },
-              { title: 'Apply & Win', desc: 'Use our templates to beat international competition.', icon: <Award className="text-[#008751]" size={32} /> }
-            ].map((step, i) => (
-              <div key={i} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <div className="w-16 h-16 bg-[#008751]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  {step.icon}
+              { 
+                title: 'Premium Remote Jobs', 
+                desc: 'Get exclusive access to verified international roles paying ₦2M+ that are actively looking for Nigerian talent.', 
+                icon: <Briefcase className="text-[#008751]" size={32} />,
+                tag: 'EARN IN DOLLARS'
+              },
+              { 
+                title: 'Global Skill Academy', 
+                desc: 'Learn high-income skills like UX Design, Cloud Computing, and Technical Writing through our curated path.', 
+                icon: <Globe className="text-[#008751]" size={32} />,
+                tag: 'LEVEL UP'
+              },
+              { 
+                title: 'Referral Earnings', 
+                desc: 'Earn ₦1,500+ for every friend you refer who joins the hub. Build a passive income stream while you job hunt.', 
+                icon: <Zap className="text-[#008751]" size={32} />,
+                tag: 'PASSIVE INCOME'
+              }
+            ].map((pillar, i) => (
+              <div key={i} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center text-center group hover:border-[#008751] transition-all">
+                <div className="w-16 h-16 bg-[#008751]/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  {pillar.icon}
                 </div>
-                <h3 className="text-xl font-bold mb-4">{step.title}</h3>
-                <p className="text-gray-600 font-medium">{step.desc}</p>
+                <span className="text-[10px] font-black text-[#008751] tracking-widest uppercase mb-2">{pillar.tag}</span>
+                <h3 className="text-xl font-bold mb-4">{pillar.title}</h3>
+                <p className="text-gray-600 font-medium leading-relaxed">{pillar.desc}</p>
               </div>
             ))}
           </div>
@@ -123,27 +144,15 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-24 max-w-3xl mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
-        <div className="space-y-4">
-          {[
-            { q: "Is this for tech only?", a: "No! We have roles for Virtual Assistants, Customer Success, Writing, Design, and Tech." },
-            { q: "Can I cancel anytime?", a: "Yes, you can cancel your subscription with one click from your dashboard." },
-            { q: "How do referrals work?", a: "Invite friends and earn up to 15% of their subscription fee for as long as they stay members." }
-          ].map((faq, i) => (
-            <div key={i} className="p-6 border border-gray-100 rounded-2xl">
-              <h4 className="font-bold text-gray-900 mb-2">{faq.q}</h4>
-              <p className="text-gray-600 text-sm font-medium">{faq.a}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <FAQ />
 
       <footer className="py-12 border-t border-gray-100 text-center">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <span className="text-2xl">🇳🇬</span>
           <span className="font-bold text-lg text-[#008751]">NaijaRemoteHub</span>
+        </div>
+        <div className="flex items-center justify-center gap-6 mb-4 text-sm font-bold text-gray-500">
+          <a href="mailto:naijaremotehub@gmail.com" className="text-[#008751] hover:underline">Contact Admin</a>
         </div>
         <p className="text-gray-500 text-sm">© 2026 NaijaRemoteHub. Empowering Nigerian Talents.</p>
       </footer>

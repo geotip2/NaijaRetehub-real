@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { auth, db } from './lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { supabase } from './lib/supabase';
 import { getTrialDaysRemaining } from './lib/utils';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
@@ -10,7 +8,8 @@ import Dashboard from './pages/Dashboard';
 import GeneralArea from './pages/GeneralArea';
 import Upgrade from './pages/Upgrade';
 import Referrals from './pages/Referrals';
-import { seedFirestore } from './lib/seed';
+import AdminDashboard from './pages/AdminDashboard';
+import AnnouncementBanner from './components/AnnouncementBanner';
 
 function TrialMiddleware({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
@@ -18,37 +17,48 @@ function TrialMiddleware({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   useEffect(() => {
-    // Seed data in dev
-    if (process.env.NODE_ENV === 'development') {
-      seedFirestore();
-    }
+    let mounted = true;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        setLoading(false);
+        if (mounted) setLoading(false);
         return;
       }
 
-      const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
       
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        // Convert timestamp to ISO string for getTrialDaysRemaining
-        const trialStartDate = data.trial_start_date?.toDate?.()?.toISOString() || data.trial_start_date;
-        setProfile({ ...data, trial_start_date: trialStartDate });
+      if (data && mounted) {
+        setProfile(data);
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
+    }
+
+    loadProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        loadProfile();
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [location]);
 
   if (loading) return null;
 
   // If user is logged in, on free plan, and trial expired
   if (profile && profile.plan === 'free') {
-    const daysRemaining = getTrialDaysRemaining(profile.trial_start_date);
+    const daysRemaining = getTrialDaysRemaining(profile.created_at); // Supabase uses created_at by default
     if (daysRemaining <= 0 && location.pathname !== '/upgrade') {
       return <Navigate to="/upgrade" replace />;
     }
@@ -62,12 +72,17 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (loading) return null;
@@ -75,6 +90,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-[#008751]/30">
+        <AnnouncementBanner />
         <Navbar />
         <TrialMiddleware>
           <Routes>
@@ -91,6 +107,10 @@ export default function App() {
             <Route 
               path="/referrals" 
               element={user ? <Referrals /> : <Navigate to="/" />} 
+            />
+            <Route 
+              path="/admin" 
+              element={user && user.email === 'taiwofasuyi@gmail.com' ? <AdminDashboard /> : <Navigate to="/" />} 
             />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

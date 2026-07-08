@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, db } from '../lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 import PricingTable from '../components/PricingTable';
-import { CheckCircle, ShieldCheck, Lock } from 'lucide-react';
+import { CheckCircle, ShieldCheck, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 export default function Upgrade() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -13,29 +13,36 @@ export default function Upgrade() {
 
   useEffect(() => {
     async function loadProfile() {
-      const user = auth.currentUser;
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         navigate('/');
         return;
       }
-      const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setProfile({ id: docSnap.id, ...docSnap.data() } as Profile);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setProfile(data as Profile);
       }
       setLoading(false);
     }
     loadProfile();
   }, [navigate]);
 
-  const handlePaymentSuccess = async (response: any, planId: string) => {
-    // In a real app, verify transaction with Flutterwave API
+  const handlePaymentSuccess = async (planId: string) => {
     try {
-      const user = auth.currentUser;
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await updateDoc(doc(db, 'users', user.uid), {
-          plan: planId
-        });
+        const { error } = await supabase
+          .from('users')
+          .update({ plan: planId })
+          .eq('id', user.id);
+        
+        if (error) throw error;
+
         alert(`Welcome to ${planId} membership!`);
         navigate('/dashboard');
       }
@@ -44,17 +51,43 @@ export default function Upgrade() {
     }
   };
 
+  const config = {
+    public_key: (import.meta as any).env.VITE_FLW_PUBLIC_KEY || 'FLWPUBK_TEST-SANDBOX-KEY',
+    tx_ref: `NRH-${Date.now()}`,
+    amount: 0,
+    currency: 'NGN',
+    payment_options: 'card,mobilemoney,ussd',
+    customer: {
+      email: profile?.email || '',
+      phone_number: '0000000000',
+      name: profile?.email?.split('@')[0] || '',
+    },
+    customizations: {
+      title: 'NaijaRemoteHub Membership',
+      description: 'Upgrade your account. Note: Beneficiary account name is PETAI',
+      logo: 'https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-abstract-logo-template.jpg',
+    },
+  };
+
+  const handleFlutterPayment = useFlutterwave(config);
+
   const handlePlanSelect = (plan: any) => {
     if (plan.id === 'free') {
       navigate('/dashboard');
       return;
     }
 
-    // Simulate Flutterwave modal
-    const confirm = window.confirm(`Pay ${plan.price.toLocaleString()} for ${plan.name} access?`);
-    if (confirm) {
-      handlePaymentSuccess({ status: "successful" }, plan.id);
-    }
+    if (!profile) return;
+
+    handleFlutterPayment({
+      callback: (response) => {
+        if (response.status === "successful") {
+          handlePaymentSuccess(plan.id);
+        }
+        closePaymentModal();
+      },
+      onClose: () => {},
+    });
   };
 
   if (loading) return <div className="p-20 text-center">Loading...</div>;
@@ -85,6 +118,13 @@ export default function Upgrade() {
         </div>
 
         <PricingTable onSelectPlan={handlePlanSelect} />
+
+        <div className="mt-8 bg-blue-50 border border-blue-100 p-4 rounded-2xl max-w-2xl mx-auto flex items-center justify-center space-x-3">
+          <AlertCircle size={20} className="text-blue-500 shrink-0" />
+          <p className="text-blue-700 text-sm font-bold">
+            Important Note: During checkout, the beneficiary account name will appear as <span className="bg-blue-200 px-1 rounded">PETAI</span>.
+          </p>
+        </div>
 
         <div className="mt-12 text-gray-500 flex items-center justify-center space-x-2 text-sm font-bold">
            <ShieldCheck size={18} className="text-[#008751]" />

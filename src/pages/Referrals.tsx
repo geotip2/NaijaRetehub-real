@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { auth, db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 import { Copy, Users, Wallet, CreditCard, ChevronRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Referrals() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [referredUsers, setReferredUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountNumber, setAccountNumber] = useState('');
   const [bankName, setBankName] = useState('');
@@ -14,12 +14,26 @@ export default function Referrals() {
 
   useEffect(() => {
     async function loadData() {
-      const user = auth.currentUser;
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setProfile({ id: docSnap.id, ...docSnap.data() } as Profile);
+        const { data: profileData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileData) {
+          setProfile(profileData as Profile);
+          
+          // Fetch referred users
+          const { data: referrals } = await supabase
+            .from('users')
+            .select('*')
+            .eq('referred_by', profileData.referral_code);
+          
+          if (referrals) {
+            setReferredUsers(referrals as Profile[]);
+          }
         }
       }
       setLoading(false);
@@ -111,6 +125,57 @@ export default function Referrals() {
             </div>
             <h3 className="text-3xl font-black mb-2">₦{profile?.total_earned.toLocaleString()}</h3>
             <p className="text-xs opacity-80 font-medium">Earned this month</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-12">
+          <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+            <h3 className="font-bold text-lg flex items-center space-x-2">
+              <Users size={20} className="text-[#008751]" />
+              <span>Your Referrals</span>
+            </h3>
+            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">
+              {referredUsers.length} Total
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-bold uppercase tracking-widest border-b border-gray-50">
+                  <th className="px-8 py-4">User</th>
+                  <th className="px-8 py-4">Status</th>
+                  <th className="px-8 py-4 text-right">Potential Earn</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {referredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-8 py-12 text-center text-gray-400 font-medium">
+                      No referrals yet. Share your link to start earning!
+                    </td>
+                  </tr>
+                ) : (
+                  referredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-8 py-5">
+                        <p className="font-bold text-gray-900">{user.email.split('@')[0]}</p>
+                        <p className="text-xs text-gray-400 font-medium">{user.email}</p>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
+                          user.plan === 'free' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-600'
+                        }`}>
+                          {user.plan}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5 text-right font-bold text-gray-900">
+                        {user.plan === 'free' ? '₦0' : '₦1,500+'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

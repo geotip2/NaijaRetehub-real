@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { db } from '../lib/firebase';
-import { collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { supabase } from '../lib/supabase';
 import { Job, Course } from '../types';
 import JobCard from '../components/JobCard';
 import { Link } from 'react-router-dom';
@@ -14,24 +13,20 @@ export default function GeneralArea() {
 
   useEffect(() => {
     async function fetchData() {
-      const jobsQuery = query(
-        collection(db, 'jobs'),
-        where('is_free', '==', true),
-        limit(3)
-      );
-      const jobsSnap = await getDocs(jobsQuery);
-      const jobsList = jobsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];
+      const { data: jobsList } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('is_free', true)
+        .limit(3);
+      
+      const { data: coursesList } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_free', true)
+        .limit(1);
 
-      const coursesQuery = query(
-        collection(db, 'courses'),
-        where('is_free', '==', true),
-        limit(1)
-      );
-      const coursesSnap = await getDocs(coursesQuery);
-      const coursesList = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Course[];
-
-      setJobs(jobsList);
-      setCourses(coursesList);
+      setJobs((jobsList || []) as Job[]);
+      setCourses((coursesList || []) as Course[]);
       setLoading(false);
     }
     fetchData();

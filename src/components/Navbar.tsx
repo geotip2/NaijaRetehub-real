@@ -2,24 +2,27 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User as UserIcon, Briefcase, Award, TrendingUp, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth } from '../lib/firebase';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { supabase } from '../lib/supabase';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
     });
 
-    return () => unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
     navigate('/');
   };
 
@@ -37,11 +40,15 @@ export default function Navbar() {
           {/* Desktop */}
           <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
             <Link to="/" className="hover:text-[#008751] transition-colors">Home</Link>
+            <a href="mailto:naijaremotehub@gmail.com" className="hover:text-[#008751] transition-colors">Contact</a>
             {user ? (
               <>
                 <Link to="/dashboard" className="text-[#008751]">Dashboard</Link>
                 <Link to="/general" className="hover:text-[#008751] transition-colors">Free Jobs</Link>
                 <Link to="/referrals" className="hover:text-[#008751] transition-colors">Referrals</Link>
+                {user?.email === 'taiwofasuyi@gmail.com' && (
+                  <Link to="/admin" className="hover:text-[#008751] transition-colors">Admin</Link>
+                )}
                 <button 
                   onClick={handleSignOut}
                   className="flex items-center space-x-1 text-gray-400 hover:text-gray-600"
@@ -80,6 +87,7 @@ export default function Navbar() {
           >
             <div className="flex flex-col space-y-4">
               <Link to="/" onClick={() => setIsOpen(false)} className="py-2 border-b border-white/5">Home</Link>
+              <a href="mailto:naijaremotehub@gmail.com" className="py-2 border-b border-white/5">Contact Admin</a>
               {user ? (
                 <>
                   <Link to="/dashboard" onClick={() => setIsOpen(false)} className="py-2 border-b border-white/5 flex items-center space-x-2">

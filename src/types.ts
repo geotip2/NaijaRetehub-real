@@ -8,6 +8,19 @@ export interface Profile {
   referral_code: string;
   referred_by?: string;
   total_earned: number;
+  role?: 'admin' | 'user';
+  full_name?: string;
+  avatar_url?: string;
+  skills?: string[];
+  created_at: string;
+}
+
+export interface Announcement {
+  id: string;
+  message: string;
+  type: 'info' | 'warning' | 'success';
+  is_active: boolean;
+  created_at: any;
 }
 
 export interface Job {
