@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { supabase } from '../lib/supabase';
 import { Briefcase, Globe, Zap, ArrowRight, ShieldCheck, Star, User, Award } from 'lucide-react';
 import PricingTable from '../components/PricingTable';
 import AuthModal from '../components/AuthModal';
@@ -7,6 +9,32 @@ import FAQ from '../components/FAQ';
 
 export default function Landing() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handlePlanSelect = (plan?: any) => {
+    if (user) {
+      if (plan?.id === 'free') {
+        navigate('/dashboard');
+      } else {
+        navigate('/upgrade');
+      }
+    } else {
+      setAuthModalOpen(true);
+    }
+  };
 
   return (
     <div className="bg-white">
@@ -53,7 +81,7 @@ export default function Landing() {
               className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4"
             >
               <button 
-                onClick={() => setAuthModalOpen(true)}
+                onClick={handlePlanSelect}
                 className="w-full sm:w-auto bg-[#1A1A1A] text-white px-10 py-5 rounded-2xl font-bold text-lg hover:bg-[#333] transition-all flex items-center justify-center space-x-2"
               >
                 <span>Start 14-Day Free Trial</span>
@@ -140,7 +168,7 @@ export default function Landing() {
             <h2 className="text-4xl font-black mb-4">Choose Your Path</h2>
             <p className="text-gray-600 font-medium">Join Nigeria's elite remote work community.</p>
           </div>
-          <PricingTable onSelectPlan={() => setAuthModalOpen(true)} />
+          <PricingTable onSelectPlan={handlePlanSelect} />
         </div>
       </section>
 

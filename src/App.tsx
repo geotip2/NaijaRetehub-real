@@ -26,13 +26,31 @@ function TrialMiddleware({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Check if profile exists
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (data && mounted) {
+      if (!data) {
+        // Profile doesn't exist, create it (likely a new OAuth sign-up)
+        const urlParams = new URLSearchParams(window.location.search);
+        const referralCode = urlParams.get('ref');
+
+        const { data: newProfile, error: insertError } = await supabase.from('users').upsert({
+          id: user.id,
+          email: user.email,
+          plan: 'free',
+          referral_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          referred_by: referralCode,
+          total_earned: 0,
+        }, { onConflict: 'id' }).select().maybeSingle();
+
+        if (!insertError && mounted) {
+          setProfile(newProfile);
+        }
+      } else if (data && mounted) {
         setProfile(data);
       }
       if (mounted) setLoading(false);

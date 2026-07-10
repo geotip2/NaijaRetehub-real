@@ -23,9 +23,8 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+    async function loadData(userId?: string) {
+      if (!userId) {
         navigate('/');
         return;
       }
@@ -34,22 +33,19 @@ export default function Dashboard() {
       const { data: profileData, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user.id)
-        .single();
+        .eq('id', userId)
+        .maybeSingle();
       
-      if (profileError || !profileData) {
-        setLoading(false);
-        return;
-      }
+      if (!profileError && profileData) {
+        setProfile(profileData as Profile);
 
-      setProfile(profileData as Profile);
-
-      // Trial check
-      if (profileData.plan === 'free') {
-        const daysRemaining = getTrialDaysRemaining(profileData.created_at);
-        if (daysRemaining <= 0) {
-          navigate('/upgrade');
-          return;
+        // Trial check
+        if (profileData.plan === 'free') {
+          const daysRemaining = getTrialDaysRemaining(profileData.created_at);
+          if (daysRemaining <= 0) {
+            navigate('/upgrade');
+            return;
+          }
         }
       }
 
@@ -68,7 +64,19 @@ export default function Dashboard() {
       setCourses((coursesList || []) as Course[]);
       setLoading(false);
     }
-    loadData();
+
+    // We don't need to explicitly call getUser here because 
+    // onAuthStateChange will fire on initial mount if a session exists.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      loadData(session?.user?.id);
+    });
+
+    // Check for initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      loadData(session?.user?.id);
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const categories = useMemo(() => {
@@ -160,8 +168,8 @@ export default function Dashboard() {
             <div className="relative z-10">
               <p className="text-[#FFD700] text-xs font-bold uppercase tracking-wider mb-1">Membership</p>
               <h3 className="text-white text-xl font-bold">Earn in Dollars Today</h3>
-              <button onClick={() => navigate('/upgrade')} className="mt-4 text-white text-sm font-bold flex items-center gap-1 group">
-                Upgrade Account <span className="group-hover:translate-x-1 transition-transform">→</span>
+              <button onClick={() => navigate('/upgrade')} className="mt-4 bg-white text-[#008751] px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1 hover:bg-gray-100 transition-colors">
+                Upgrade Account <span className="transition-transform">→</span>
               </button>
             </div>
             <div className="absolute -right-4 -bottom-4 opacity-10">
@@ -310,7 +318,7 @@ export default function Dashboard() {
               <div className="md:border-l md:border-gray-100 md:pl-8">
                 <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Invite Link</p>
                 <div className="flex gap-2 mt-1">
-                  <input readOnly value={`naijaremote.hub/ref/${profile?.referral_code}`} className="text-[10px] bg-gray-50 border border-gray-100 px-3 py-2 rounded-lg text-gray-500 font-mono w-full md:w-48" />
+                  <input readOnly value={`${window.location.origin}/?ref=${profile?.referral_code}`} className="text-[10px] bg-gray-50 border border-gray-100 px-3 py-2 rounded-lg text-gray-500 font-mono w-full md:w-64 truncate" />
                   <button onClick={() => navigate('/referrals')} className="px-3 py-2 bg-[#1A1A1A] text-white text-[10px] font-bold rounded-lg whitespace-nowrap">Manage</button>
                 </div>
               </div>

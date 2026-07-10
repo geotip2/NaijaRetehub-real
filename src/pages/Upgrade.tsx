@@ -3,43 +3,76 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 import PricingTable from '../components/PricingTable';
+import AuthModal from '../components/AuthModal';
 import { CheckCircle, ShieldCheck, Lock, Loader2, AlertCircle } from 'lucide-react';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 export default function Upgrade() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const navigate = useNavigate();
 
+  const [user, setUser] = useState<any>(null);
+
   useEffect(() => {
-    async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/');
+    async function loadProfile(userId?: string) {
+      console.log('Loading profile for userId:', userId);
+      if (!userId) {
+        setProfile(null);
+        setLoading(false);
         return;
       }
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
       
+      console.log('Profile load result:', { data, error });
+
       if (data) {
         setProfile(data as Profile);
       }
       setLoading(false);
     }
-    loadProfile();
+
+    // Check for initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      loadProfile(session?.user?.id);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      loadProfile(session?.user?.id);
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handlePaymentSuccess = async (planId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { error } = await supabase
-          .from('users')
-          .update({ plan: planId })
-          .eq('id', user.id);
+        let error;
+        if (profile) {
+          const res = await supabase
+            .from('users')
+            .update({ plan: planId })
+            .eq('id', user.id);
+          error = res.error;
+        } else {
+          const res = await supabase
+            .from('users')
+            .upsert({ 
+              id: user.id, 
+              email: user.email, 
+              plan: planId,
+              total_earned: 0,
+              referral_code: Math.random().toString(36).substring(2, 8).toUpperCase()
+            }, { onConflict: 'id' });
+          error = res.error;
+        }
         
         if (error) throw error;
 
@@ -51,43 +84,16 @@ export default function Upgrade() {
     }
   };
 
-  const config = {
-    public_key: (import.meta as any).env.VITE_FLW_PUBLIC_KEY || 'FLWPUBK_TEST-SANDBOX-KEY',
-    tx_ref: `NRH-${Date.now()}`,
-    amount: 0,
-    currency: 'NGN',
-    payment_options: 'card,mobilemoney,ussd',
-    customer: {
-      email: profile?.email || '',
-      phone_number: '0000000000',
-      name: profile?.email?.split('@')[0] || '',
-    },
-    customizations: {
-      title: 'NaijaRemoteHub Membership',
-      description: 'Upgrade your account. Note: Beneficiary account name is PETAI',
-      logo: 'https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-abstract-logo-template.jpg',
-    },
-  };
-
-  const handleFlutterPayment = useFlutterwave(config);
-
   const handlePlanSelect = (plan: any) => {
     if (plan.id === 'free') {
       navigate('/dashboard');
       return;
     }
 
-    if (!profile) return;
-
-    handleFlutterPayment({
-      callback: (response) => {
-        if (response.status === "successful") {
-          handlePaymentSuccess(plan.id);
-        }
-        closePaymentModal();
-      },
-      onClose: () => {},
-    });
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
   };
 
   if (loading) return <div className="p-20 text-center">Loading...</div>;
@@ -95,6 +101,19 @@ export default function Upgrade() {
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-32 px-4">
       <div className="max-w-7xl mx-auto text-center">
+        {!user && (
+          <div className="mb-12 p-6 bg-white rounded-3xl border-2 border-dashed border-[#008751]/20 max-w-2xl mx-auto">
+            <h2 className="text-xl font-bold mb-2">Login Required</h2>
+            <p className="text-gray-500 mb-6">Please sign in or create an account to choose a membership plan.</p>
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="bg-[#008751] text-white px-8 py-3 rounded-xl font-bold"
+            >
+              Sign In to Continue
+            </button>
+          </div>
+        )}
+
         <div className="inline-flex p-3 bg-red-100 text-red-600 rounded-full mb-6">
           <Lock size={24} />
         </div>
@@ -117,7 +136,7 @@ export default function Upgrade() {
           ))}
         </div>
 
-        <PricingTable onSelectPlan={handlePlanSelect} />
+        <PricingTable onSelectPlan={handlePlanSelect} profile={profile} onPaymentSuccess={handlePaymentSuccess} />
 
         <div className="mt-8 bg-blue-50 border border-blue-100 p-4 rounded-2xl max-w-2xl mx-auto flex items-center justify-center space-x-3">
           <AlertCircle size={20} className="text-blue-500 shrink-0" />
@@ -131,6 +150,8 @@ export default function Upgrade() {
            <span>Secure Flutterwave Payment</span>
         </div>
       </div>
+
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 }

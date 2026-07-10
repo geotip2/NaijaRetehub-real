@@ -1,6 +1,7 @@
 import { Check, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { formatCurrency } from '../lib/utils';
+import PaymentButton from './PaymentButton';
 
 interface Plan {
   id: string;
@@ -50,9 +51,11 @@ const plans: Plan[] = [
 
 interface PricingTableProps {
   onSelectPlan: (plan: Plan) => void;
+  user?: any;
+  onPaymentSuccess?: (planId: string) => void;
 }
 
-export default function PricingTable({ onSelectPlan }: PricingTableProps) {
+export default function PricingTable({ onSelectPlan, user, onPaymentSuccess }: PricingTableProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 py-12">
       {plans.map((plan) => (
@@ -89,18 +92,31 @@ export default function PricingTable({ onSelectPlan }: PricingTableProps) {
             ))}
           </ul>
 
-          <button
-            onClick={() => onSelectPlan(plan)}
-            className={`w-full py-4 rounded-xl font-bold transition-all ${
-              plan.isPopular 
-                ? 'bg-[#FFD700] text-[#1A1A1A] hover:bg-[#f2cc00]' 
-                : plan.id === 'free' 
-                  ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+          {user && plan.id !== 'free' ? (
+            <PaymentButton
+              plan={plan}
+              user={user}
+              onSuccess={onPaymentSuccess || (() => {})}
+              className={`w-full py-4 rounded-xl font-bold transition-all ${
+                plan.isPopular 
+                  ? 'bg-[#FFD700] text-[#1A1A1A] hover:bg-[#f2cc00]' 
                   : 'bg-[#008751] text-white hover:bg-[#007043]'
-            }`}
-          >
-            {plan.cta}
-          </button>
+              }`}
+            />
+          ) : (
+            <button
+              onClick={() => onSelectPlan(plan)}
+              className={`w-full py-4 rounded-xl font-bold transition-all ${
+                plan.isPopular 
+                  ? 'bg-[#FFD700] text-[#1A1A1A] hover:bg-[#f2cc00]' 
+                  : plan.id === 'free' 
+                    ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    : 'bg-[#008751] text-white hover:bg-[#007043]'
+              }`}
+            >
+              {plan.cta}
+            </button>
+          )}
         </motion.div>
       ))}
     </div>

@@ -41,7 +41,7 @@ export default function Referrals() {
     loadData();
   }, []);
 
-  const referralLink = `${window.location.origin}/join?ref=${profile?.referral_code}`;
+  const referralLink = `${window.location.origin}/?ref=${profile?.referral_code}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(referralLink);
