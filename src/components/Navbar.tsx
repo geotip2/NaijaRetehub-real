@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User as UserIcon, Briefcase, Award, TrendingUp, LogOut } from 'lucide-react';
+import { Menu, X, User as UserIcon, Briefcase, Award, TrendingUp, LogOut, MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
@@ -10,8 +10,12 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!import.meta.env.VITE_SUPABASE_URL) return;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+    }).catch(err => {
+      console.warn('Failed to get session in Navbar:', err);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -30,7 +34,7 @@ export default function Navbar() {
     <nav className="bg-white text-[#1A1A1A] sticky top-0 z-50 border-b border-gray-200 shadow-sm h-16 flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2">
             <div className="bg-[#008751] p-1.5 rounded">
               <span className="text-white text-xl font-bold leading-none">🇳🇬</span>
             </div>
@@ -39,11 +43,12 @@ export default function Navbar() {
 
           {/* Desktop */}
           <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
-            <Link to="/" className="hover:text-[#008751] transition-colors">Home</Link>
+            {!user && <Link to="/" className="hover:text-[var(--primary)] transition-colors">Home</Link>}
             <a href="mailto:naijaremotehub@gmail.com" className="hover:text-[#008751] transition-colors">Contact</a>
             {user ? (
               <>
                 <Link to="/dashboard" className="text-[#008751]">Dashboard</Link>
+                <Link to="/profile" className="hover:text-[#008751] transition-colors">Profile</Link>
                 <Link to="/general" className="hover:text-[#008751] transition-colors">Free Jobs</Link>
                 <Link to="/referrals" className="hover:text-[#008751] transition-colors">Referrals</Link>
                 {user?.email === 'taiwofasuyi@gmail.com' && (
@@ -86,12 +91,15 @@ export default function Navbar() {
             className="md:hidden bg-[#1A1A1A] border-b border-[#008751]/20 pb-6 px-4"
           >
             <div className="flex flex-col space-y-4">
-              <Link to="/" onClick={() => setIsOpen(false)} className="py-2 border-b border-white/5">Home</Link>
+              {!user && <Link to="/" onClick={() => setIsOpen(false)} className="py-2 border-b border-white/5">Home</Link>}
               <a href="mailto:naijaremotehub@gmail.com" className="py-2 border-b border-white/5">Contact Admin</a>
               {user ? (
                 <>
                   <Link to="/dashboard" onClick={() => setIsOpen(false)} className="py-2 border-b border-white/5 flex items-center space-x-2">
                     <Briefcase size={18} /> <span>Dashboard</span>
+                  </Link>
+                  <Link to="/profile" onClick={() => setIsOpen(false)} className="py-2 border-b border-white/5 flex items-center space-x-2">
+                    <UserIcon size={18} /> <span>Profile</span>
                   </Link>
                   <Link to="/general" onClick={() => setIsOpen(false)} className="py-2 border-b border-white/5 flex items-center space-x-2">
                     <TrendingUp size={18} /> <span>Free Jobs</span>

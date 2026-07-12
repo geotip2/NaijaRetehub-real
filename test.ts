@@ -1,0 +1,1 @@
+import { createClient } from '@supabase/supabase-js'; const supabase = createClient('', ''); async function test() { const { data, error } = await supabase.from('payments').select('*').limit(1); console.log(error); } test();

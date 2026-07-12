@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { X, User, Camera, Tag, Save, Loader2 } from 'lucide-react';
+import { X, User, Camera, Tag, Save, Loader2, MapPin, Briefcase, Link, Github, Linkedin, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 
-interface ProfileSettingsProps {
+interface UserProfileProps {
   isOpen: boolean;
   onClose: () => void;
   profile: Profile;
   onUpdate: (updatedProfile: Profile) => void;
 }
 
-export default function ProfileSettings({ isOpen, onClose, profile, onUpdate }: ProfileSettingsProps) {
+export default function UserProfile({ isOpen, onClose, profile, onUpdate }: UserProfileProps) {
   const [fullName, setFullName] = useState(profile.full_name || '');
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '');
+  const [title, setTitle] = useState(profile.title || '');
+  const [bio, setBio] = useState(profile.bio || '');
+  const [location, setLocation] = useState(profile.location || '');
+  const [portfolioUrl, setPortfolioUrl] = useState(profile.portfolio_url || '');
+  const [githubUrl, setGithubUrl] = useState(profile.github_url || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(profile.linkedin_url || '');
   const [skills, setSkills] = useState<string[]>(profile.skills || []);
   const [newSkill, setNewSkill] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +47,12 @@ export default function ProfileSettings({ isOpen, onClose, profile, onUpdate }: 
         .update({
           full_name: fullName,
           avatar_url: avatarUrl,
+          title: title,
+          bio: bio,
+          location: location,
+          portfolio_url: portfolioUrl,
+          github_url: githubUrl,
+          linkedin_url: linkedinUrl,
           skills: skills,
         })
         .eq('id', profile.id)
@@ -128,26 +140,94 @@ export default function ProfileSettings({ isOpen, onClose, profile, onUpdate }: 
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-6">
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Full Name</label>
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Enter your full name"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all"
-                    />
+                <div className="flex-1 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1"><User size={12}/> Full Name</label>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Enter your full name"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1"><Briefcase size={12}/> Professional Title</label>
+                      <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g. Frontend Developer"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Email (Primary)</label>
-                    <input
-                      readOnly
-                      value={profile.email}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium text-gray-400 cursor-not-allowed"
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1"><FileText size={12}/> Bio</label>
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder="Tell us a little about yourself..."
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all resize-none"
                     />
                   </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1"><MapPin size={12}/> Location</label>
+                      <input
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="e.g. Lagos, Nigeria"
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1">Email (Primary)</label>
+                      <input
+                        readOnly
+                        value={profile.email}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium text-gray-400 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1"><Link size={12}/> Portfolio URL</label>
+                  <input
+                    type="text"
+                    value={portfolioUrl}
+                    onChange={(e) => setPortfolioUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1"><Github size={12}/> GitHub URL</label>
+                  <input
+                    type="text"
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    placeholder="https://github.com/..."
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block flex items-center gap-1"><Linkedin size={12}/> LinkedIn URL</label>
+                  <input
+                    type="text"
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    placeholder="https://linkedin.com/in/..."
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#008751]/20 focus:border-[#008751] transition-all"
+                  />
                 </div>
               </div>
 

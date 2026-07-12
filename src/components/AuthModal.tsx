@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, Mail, Lock, Loader2, CheckCircle } from 'lucide-react';
+import { X, Mail, Lock, Loader2, CheckCircle, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AuthModalProps {
@@ -11,6 +11,8 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,27 +41,23 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signup' }: A
         if (signUpError) throw signUpError;
 
         if (data.user) {
-          // Create profile in users table
-          const { error: profileError } = await supabase.from('users').upsert({
+          // Ensure user exists in public.users table
+          const { error: insertError } = await supabase.from('users').insert({
             id: data.user.id,
             email: data.user.email,
-            plan: 'free',
+            full_name: `${firstName} ${lastName}`.trim(),
+            plan: data.user.email === 'taiwofasuyi@gmail.com' ? 'lifetime' : 'free',
             referral_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-            referred_by: referralCode,
-            total_earned: 0,
-          }, { onConflict: 'id' });
+            referred_by: referralCode || null,
+            created_at: new Date().toISOString()
+          });
 
-          if (profileError) {
-            console.error('Error creating profile:', profileError);
+          if (insertError && insertError.code !== '23505') {
+            console.error('Failed to create user profile', insertError);
           }
-          
-          if (data.session) {
-            setSuccessMessage('Signup successful, you can now login');
-            setTimeout(() => onClose(), 1500);
-          } else {
-            setSuccessMessage('Signup successful, you can now login');
-            setTimeout(() => onClose(), 2000);
-          }
+
+          setSuccessMessage('Signup successful, signing you in...');
+          setTimeout(() => onClose(), 1500);
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -143,6 +141,38 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signup' }: A
               )}
 
               <form onSubmit={handleAuth} className="space-y-4">
+                {mode === 'signup' && (
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-bold text-gray-700 mb-1">First Name</label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                          type="text"
+                          required={mode === 'signup'}
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none"
+                          placeholder="John"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Last Name</label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <input
+                          type="text"
+                          required={mode === 'signup'}
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#008751] outline-none"
+                          placeholder="Doe"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Email Address</label>
                   <div className="relative">

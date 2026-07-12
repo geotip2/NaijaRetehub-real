@@ -14,29 +14,35 @@ export default function Referrals() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileData) {
-          setProfile(profileData as Profile);
-          
-          // Fetch referred users
-          const { data: referrals } = await supabase
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (user) {
+          const { data: profileData } = await supabase
             .from('users')
             .select('*')
-            .eq('referred_by', profileData.referral_code);
+            .eq('id', user.id)
+            .single();
           
-          if (referrals) {
-            setReferredUsers(referrals as Profile[]);
+          if (profileData) {
+            setProfile(profileData as Profile);
+            
+            // Fetch referred users
+            const { data: referrals } = await supabase
+              .from('users')
+              .select('*')
+              .eq('referred_by', profileData.referral_code);
+            
+            if (referrals) {
+              setReferredUsers(referrals as Profile[]);
+            }
           }
         }
+      } catch (err) {
+        console.error('Failed to load referrals data:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadData();
   }, []);
@@ -86,6 +92,10 @@ export default function Referrals() {
 
   if (loading) return <div className="p-20 text-center">Loading...</div>;
 
+  const successfulSignups = referredUsers.filter(u => u.plan !== 'free').length;
+  const potentialEarnings = referredUsers.filter(u => u.plan === 'free').length * 1500;
+  const conversionRate = referredUsers.length > 0 ? (successfulSignups / referredUsers.length) * 100 : 0;
+
   return (
     <div className="min-h-screen bg-gray-50 pt-12 pb-24 px-4">
       <div className="max-w-4xl mx-auto">
@@ -93,6 +103,37 @@ export default function Referrals() {
           <h1 className="text-4xl font-black text-gray-900 mb-4">Affiliate Hub</h1>
           <p className="text-gray-600 font-medium">Earn up to 15% recurring commission for every friend you bring.</p>
         </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Total Referrals</p>
+            <h3 className="text-3xl font-black text-[#1A1A1A]">{referredUsers.length}</h3>
+          </div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Successful Sign-ups</p>
+            <h3 className="text-3xl font-black text-[#008751]">{successfulSignups}</h3>
+          </div>
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Potential Earnings</p>
+            <h3 className="text-3xl font-black text-amber-500">₦{potentialEarnings.toLocaleString()}</h3>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mb-12">
+          <div className="flex justify-between items-end mb-3">
+            <div>
+              <h4 className="font-bold text-gray-900 mb-1">Conversion Progress</h4>
+              <p className="text-xs text-gray-500 font-medium">Percentage of your referrals who upgraded to a premium plan.</p>
+            </div>
+            <span className="text-xl font-black text-[#008751]">{conversionRate.toFixed(1)}%</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden relative">
+            <div 
+              className="bg-[#008751] h-full rounded-full transition-all duration-1000 ease-out absolute left-0 top-0"
+              style={{ width: `${conversionRate}%` }}
+            ></div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-12 gap-4 mb-12">
           <div className="col-span-12 md:col-span-8 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
@@ -163,13 +204,13 @@ export default function Referrals() {
                       </td>
                       <td className="px-8 py-5">
                         <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                          user.plan === 'free' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-600'
+                          (user.plan || 'free') === 'free' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-green-600'
                         }`}>
-                          {user.plan}
+                          {user.plan || 'free'}
                         </span>
                       </td>
                       <td className="px-8 py-5 text-right font-bold text-gray-900">
-                        {user.plan === 'free' ? '₦0' : '₦1,500+'}
+                        {(user.plan || 'free') === 'free' ? '₦0' : '₦1,500+'}
                       </td>
                     </tr>
                   ))

@@ -9,16 +9,22 @@ export default function AnnouncementBanner() {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    if (!import.meta.env.VITE_SUPABASE_URL) return;
+    
     const fetchAnnouncement = async () => {
-      const { data } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (data && data[0]) {
-        setAnnouncement(data[0] as Announcement);
+      try {
+        const { data } = await supabase
+          .from('announcements')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (data && data[0]) {
+          setAnnouncement(data[0] as Announcement);
+        }
+      } catch (e) {
+        console.warn("Could not fetch announcements:", e);
       }
     };
     fetchAnnouncement();

@@ -22,7 +22,7 @@ export default function PaymentButton({ plan, user, onSuccess, className }: Paym
     customizations: {
       title: 'NaijaRemoteHub Membership',
       description: `Upgrade to ${plan.name} Membership. Note: Beneficiary account name is PETAI`,
-      logo: 'https://st2.depositphotos.com/4403291/7418/v/450/depositphotos_74189661-stock-illustration-abstract-logo-template.jpg',
+      logo: 'https://cdn.iconscout.com/icon/free/png-256/flutterwave-226462.png',
     },
   };
 
@@ -32,16 +32,21 @@ export default function PaymentButton({ plan, user, onSuccess, className }: Paym
     <button
       className={className}
       onClick={() => {
-        handleFlutterPayment({
-          callback: (response: any) => {
-             console.log('Flutterwave response:', response);
-             if (response.status === "successful") {
-               onSuccess(plan.id);
-             }
-             closePaymentModal();
-          },
-          onClose: () => {},
-        });
+        try {
+          handleFlutterPayment({
+            callback: (response: any) => {
+               console.log('Flutterwave response:', response);
+               if (response.status === "successful") {
+                 onSuccess(plan.id);
+               }
+               closePaymentModal();
+            },
+            onClose: () => {},
+          });
+        } catch (error) {
+          console.error("Flutterwave error:", error);
+          alert("Could not load payment modal. Please try again later.");
+        }
       }}
     >
       {plan.cta}

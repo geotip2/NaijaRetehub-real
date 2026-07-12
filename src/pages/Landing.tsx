@@ -13,16 +13,26 @@ export default function Landing() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!import.meta.env.VITE_SUPABASE_URL) return;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        navigate('/dashboard');
+      }
+    }).catch(err => {
+      console.warn('Failed to get session in Landing:', err);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        navigate('/dashboard');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const handlePlanSelect = (plan?: any) => {
     if (user) {
@@ -84,7 +94,7 @@ export default function Landing() {
                 onClick={handlePlanSelect}
                 className="w-full sm:w-auto bg-[#1A1A1A] text-white px-10 py-5 rounded-2xl font-bold text-lg hover:bg-[#333] transition-all flex items-center justify-center space-x-2"
               >
-                <span>Start 14-Day Free Trial</span>
+                <span>Start for Free</span>
                 <ArrowRight size={20} />
               </button>
               <div className="flex items-center space-x-2 text-gray-500 font-medium">

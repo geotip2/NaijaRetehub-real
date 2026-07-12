@@ -40,6 +40,9 @@ export default function Upgrade() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
       loadProfile(session?.user?.id);
+    }).catch(err => {
+      console.warn('Failed to get session in Upgrade:', err);
+      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -136,7 +139,7 @@ export default function Upgrade() {
           ))}
         </div>
 
-        <PricingTable onSelectPlan={handlePlanSelect} profile={profile} onPaymentSuccess={handlePaymentSuccess} />
+        <PricingTable onSelectPlan={handlePlanSelect} user={user} onPaymentSuccess={handlePaymentSuccess} />
 
         <div className="mt-8 bg-blue-50 border border-blue-100 p-4 rounded-2xl max-w-2xl mx-auto flex items-center justify-center space-x-3">
           <AlertCircle size={20} className="text-blue-500 shrink-0" />

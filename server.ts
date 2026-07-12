@@ -54,6 +54,35 @@ async function startServer() {
     }
   });
 
+  // LinkedIn Jobs Endpoint
+  app.get("/api/linkedin-jobs", async (req, res) => {
+    const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+    if (!RAPIDAPI_KEY) {
+      return res.status(500).json({ error: "RAPIDAPI_KEY not configured in environment" });
+    }
+
+    try {
+      const query = req.query.query || "remote tech jobs";
+      const response = await fetch(`https://linkedin-data-api.p.rapidapi.com/search-jobs?keywords=${encodeURIComponent(query as string)}&locationId=92000000&datePosted=anyTime&sort=mostRelevant`, {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': 'linkedin-data-api.p.rapidapi.com'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`RapidAPI responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("LinkedIn jobs error:", error);
+      res.status(500).json({ error: "Failed to fetch LinkedIn jobs" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -13,7 +13,8 @@ export default function GeneralArea() {
 
   useEffect(() => {
     async function fetchData() {
-      const { data: jobsList } = await supabase
+      try {
+        const { data: jobsList } = await supabase
         .from('jobs')
         .select('*')
         .eq('is_free', true)
@@ -27,7 +28,11 @@ export default function GeneralArea() {
 
       setJobs((jobsList || []) as Job[]);
       setCourses((coursesList || []) as Course[]);
-      setLoading(false);
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
   }, []);

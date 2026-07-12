@@ -16,18 +16,18 @@ interface Plan {
 const plans: Plan[] = [
   {
     id: 'free',
-    name: 'Free Trial',
+    name: 'Free Mode',
     price: 0,
-    duration: '14 Days',
-    features: ['Access General Area', '3 Sample Jobs', '1 Free Course', 'Community Access'],
-    cta: 'Start Free Trial'
+    duration: 'Forever',
+    features: ['Access General Area', 'Browse Basic Jobs', '1 Free Course', 'Community Access'],
+    cta: 'Start for Free'
   },
   {
     id: 'starter',
     name: 'Starter',
     price: 8000,
     duration: 'per month',
-    features: ['10 Jobs/week', '2 Courses', '10% Referral Payout', 'Email Support'],
+    features: ['10 Jobs/week', '10 Daily LinkedIn Leads', '2 Courses', '10% Referral Payout', 'Email Support'],
     cta: 'Get Started'
   },
   {
@@ -35,7 +35,7 @@ const plans: Plan[] = [
     name: 'Pro',
     price: 15000,
     duration: 'per month',
-    features: ['50+ Jobs/week', 'All Courses', '15% Referral Payout', 'Priority Support', 'Resume Review'],
+    features: ['50+ Jobs/week', '25 Daily LinkedIn Leads', 'All Courses', '15% Referral Payout', 'Priority Support', 'Resume Review'],
     isPopular: true,
     cta: 'Join Pro'
   },
@@ -44,7 +44,7 @@ const plans: Plan[] = [
     name: 'Lifetime',
     price: 80000,
     duration: 'one-time',
-    features: ['Everything in Pro', 'Lifetime Access', 'Mentorship Sessions', 'Exclusive Hub Events'],
+    features: ['Everything in Pro', 'Unlimited LinkedIn Leads', 'Lifetime Access', 'Mentorship Sessions', 'Exclusive Hub Events'],
     cta: 'Go Lifetime'
   }
 ];
